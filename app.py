@@ -23,27 +23,60 @@ st.set_page_config(
 st.markdown("""
 <style>
     .top-header {
+        display:flex; align-items:center; gap:12px;
+        padding: 14px 0 18px 0;
+        border-bottom: 1px solid #e2e8f0;
+        margin-bottom: 20px;
+    }
+    .top-header .logo {
+        width:40px; height:40px; border-radius:10px;
         background: linear-gradient(135deg, #1e3a5f, #2563eb);
-        padding: 16px 24px;
-        border-radius: 10px;
-        margin-bottom: 24px;
+        display:flex; align-items:center; justify-content:center;
+        font-size:20px; color:white;
     }
-    .top-header h2 { color: white; margin: 0; font-size: 20px; }
-    .top-header p  { color: #a0bcd8; margin: 2px 0 0 0; font-size: 13px; }
+    .top-header h2 { color:#0f172a; margin:0; font-size:18px; font-weight:700; }
+    .top-header p  { color:#64748b; margin:0; font-size:12px; }
 
-    .badge-Ask       { background:#DBEAFE; color:#1D4ED8; padding:5px 14px; border-radius:20px; font-weight:700; }
-    .badge-Follow-Up { background:#D1FAE5; color:#065F46; padding:5px 14px; border-radius:20px; font-weight:700; }
-    .badge-Hold      { background:#FEF3C7; color:#92400E; padding:5px 14px; border-radius:20px; font-weight:700; }
-    .badge-Closing   { background:#FCE7F3; color:#9D174D; padding:5px 14px; border-radius:20px; font-weight:700; }
+    /* Badge status - bentuk pill kecil dengan teks status */
+    .badge-Ask       { background:#DBEAFE; color:#1D4ED8; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
+    .badge-Follow-Up { background:#FFEDD5; color:#C2410C; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
+    .badge-Hold      { background:#EDE9FE; color:#6D28D9; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
+    .badge-Closing   { background:#D1FAE5; color:#047857; padding:4px 12px; border-radius:20px; font-weight:600; font-size:13px; }
 
-    .hasil-box {
-        background:#f8fafc; border:1px solid #e2e8f0;
-        border-radius:10px; padding:16px 20px; margin-bottom:12px;
+    /* Icon bulat untuk hasil klasifikasi (sesuai gambar) */
+    .icon-circle {
+        width:38px; height:38px; border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        font-size:18px; flex-shrink:0;
     }
+    .icon-Ask       { background:#DBEAFE; color:#1D4ED8; }
+    .icon-Follow-Up { background:#FFEDD5; color:#C2410C; }
+    .icon-Hold      { background:#EDE9FE; color:#6D28D9; }
+    .icon-Closing   { background:#D1FAE5; color:#047857; }
+
+    .card-box {
+        background:white; border:1px solid #e2e8f0;
+        border-radius:10px; padding:20px 24px; margin-bottom:16px;
+    }
+    .hasil-row { display:flex; align-items:center; gap:14px; }
+    .hasil-row .status-name { font-size:18px; font-weight:700; color:#0f172a; }
+    .confidence-chip {
+        background:#f1f5f9; color:#475569; font-size:11px; font-weight:600;
+        padding:3px 10px; border-radius:6px; margin-left:6px;
+    }
+    .progress-bar-bg { background:#e2e8f0; border-radius:10px; height:7px; margin-top:14px; }
+    .progress-bar-Ask       { background:#2563eb; }
+    .progress-bar-Follow-Up { background:#ea580c; }
+    .progress-bar-Hold      { background:#7c3aed; }
+    .progress-bar-Closing   { background:#059669; }
+
     .rekomen-box {
-        background:#fffbeb; border-left:4px solid #f59e0b;
-        border-radius:6px; padding:12px 16px; margin-top:8px;
+        background:#eff6ff; border-left:4px solid #2563eb;
+        border-radius:6px; padding:14px 18px; margin-top:14px;
     }
+    .rekomen-box .judul { font-size:13px; font-weight:700; color:#1e40af; margin-bottom:4px; }
+    .rekomen-box .isi { font-size:14px; color:#334155; }
+
     .metric-card {
         background:white; border:1px solid #e2e8f0;
         border-radius:10px; padding:16px; text-align:center;
@@ -53,6 +86,25 @@ st.markdown("""
 
     .empty-state { text-align:center; padding:40px 20px; color:#94a3b8; }
     .empty-state .icon { font-size:48px; margin-bottom:12px; }
+
+    /* Tabel riwayat custom */
+    .riwayat-table-wrap { overflow-x:auto; }
+    .riwayat-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .riwayat-table th {
+        text-align:left; padding:10px 12px; color:#64748b;
+        font-weight:600; border-bottom:2px solid #e2e8f0; white-space:nowrap;
+    }
+    .riwayat-table td {
+        padding:12px; border-bottom:1px solid #f1f5f9; vertical-align:top; color:#334155;
+    }
+    .riwayat-table tr:hover td { background:#f8fafc; }
+    .conf-pill {
+        background:#f1f5f9; color:#334155; padding:2px 8px;
+        border-radius:6px; font-size:12px; font-weight:600;
+    }
+    .col-teks { max-width:220px; }
+    .col-rekom { max-width:260px; color:#64748b; }
+    .col-waktu { white-space:nowrap; color:#94a3b8; font-size:12px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -108,7 +160,7 @@ def preprocess(text, stemmer, stopword_remover):
 # ============================================================
 # FUNGSI DATABASE
 # ============================================================
-def simpan_riwayat(nama_cs, teks_input, teks_bersih, status, confidence, rekomendasi):
+def simpan_riwayat(teks_input, teks_bersih, status, confidence, rekomendasi, nama_cs="CS"):
     try:
         supabase.table('riwayat_prediksi').insert({
             'nama_cs':     nama_cs,
@@ -144,12 +196,12 @@ def ambil_statistik():
     except:
         return {}
 
-def ambil_users_cs():
+def hitung_total_riwayat():
     try:
-        res = supabase.table('users_cs').select('nama').eq('aktif', True).execute()
-        return [r['nama'] for r in res.data] if res.data else ['CS 1']
+        res = supabase.table('riwayat_prediksi').select('id', count='exact').execute()
+        return res.count if res.count is not None else 0
     except:
-        return ['CS 1', 'CS 2', 'CS 3']
+        return 0
 
 def hapus_riwayat_semua():
     try:
@@ -159,7 +211,7 @@ def hapus_riwayat_semua():
         return False
 
 # ============================================================
-# DATA REKOMENDASI
+# DATA REKOMENDASI & ICON
 # ============================================================
 REKOMENDASI = {
     'Ask': {
@@ -171,7 +223,7 @@ REKOMENDASI = {
         'teks': 'Lakukan reminder follow-up dalam 1-2 hari. Tanyakan keputusan pelanggan dan tawarkan bantuan lebih lanjut.'
     },
     'Hold': {
-        'icon': '⏸️',
+        'icon': '⏳',
         'teks': 'Monitoring berkala setiap minggu. Catat alasan penundaan dan tunggu waktu yang tepat untuk follow-up.'
     },
     'Closing': {
@@ -185,8 +237,11 @@ REKOMENDASI = {
 # ============================================================
 st.markdown("""
 <div class="top-header">
-    <h2>🏠 Dashboard Klasifikasi Status Pelanggan</h2>
-    <p>Wallpaper Indonesia ID — Sistem Pendukung Keputusan Customer Service</p>
+    <div class="logo">🏠</div>
+    <div>
+        <h2>Dashboard Klasifikasi Status Pelanggan</h2>
+        <p>Wallpaper Indonesia ID</p>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -200,103 +255,101 @@ if not model_loaded:
 # ============================================================
 # NAVIGASI
 # ============================================================
-tab_home, tab_riwayat, tab_statistik = st.tabs(["🏠 Home", "📋 Riwayat Prediksi", "📊 Statistik"])
+total_riwayat_count = hitung_total_riwayat() if db_ok else 0
+
+label_home     = "🏠 Home"
+label_riwayat  = f"🕘 Riwayat ({total_riwayat_count})" if total_riwayat_count > 0 else "🕘 Riwayat"
+label_statistik = "📊 Statistik"
+
+tab_home, tab_riwayat, tab_statistik = st.tabs([label_home, label_riwayat, label_statistik])
 
 stemmer, stopword_remover = load_preprocessor()
-list_cs = ambil_users_cs()
 
 # ============================================================
-# TAB 1 - HOME (KLASIFIKASI)
+# TAB 1 - HOME (KLASIFIKASI) — Layout 1 kolom sesuai gambar
 # ============================================================
 with tab_home:
-    col_input, col_hasil = st.columns([1, 1], gap="large")
+    st.markdown("#### Input Interaksi Pelanggan")
+    st.caption("Masukkan ringkasan percakapan WhatsApp dengan pelanggan untuk mengklasifikasikan status mereka")
 
-    with col_input:
-        st.markdown("#### Input Interaksi Pelanggan")
-        st.caption("Masukkan ringkasan percakapan WhatsApp dengan pelanggan")
+    teks_input = st.text_area(
+        "Teks Interaksi Pelanggan",
+        placeholder="Contoh: Pelanggan tanya harga wallpaper untuk 3 kamar dan minta dikabari besok...",
+        height=100,
+        label_visibility="collapsed"
+    )
 
-        nama_cs = st.selectbox("Nama CS", list_cs)
+    tombol = st.button("🔍 Prediksi Status Pelanggan", use_container_width=True, type="primary")
 
-        teks_input = st.text_area(
-            "Teks Interaksi Pelanggan",
-            placeholder="Contoh: Pelanggan tanya harga wallpaper untuk 3 kamar dan minta dikirim desain...",
-            height=140
-        )
+    st.markdown("#### Hasil Klasifikasi")
 
-        tombol = st.button("🔍 Prediksi Status Pelanggan", use_container_width=True, type="primary")
-
-    with col_hasil:
-        st.markdown("#### Hasil Klasifikasi")
-
-        if tombol:
-            if not teks_input.strip():
-                st.warning("⚠️ Teks interaksi tidak boleh kosong!")
-            else:
-                with st.spinner("Memproses..."):
-                    teks_bersih = preprocess(teks_input, stemmer, stopword_remover)
-                    vektor      = tfidf.transform([teks_bersih])
-                    prediksi    = model.predict(vektor)[0]
-                    confidence  = model.predict_proba(vektor).max() * 100
-                    rekomen     = REKOMENDASI.get(prediksi, {})
-
-                # Badge status
-                badge_key = prediksi.replace(' ', '-')
-                st.markdown(f"""
-                <div class="hasil-box">
-                    <div style="font-size:13px;color:#64748b;margin-bottom:6px;">Status Pelanggan</div>
-                    <span class="badge-{badge_key}">{prediksi}</span>
-                    &nbsp;
-                    <span style="color:#64748b;font-size:13px;">Confidence: <strong>{confidence:.1f}%</strong></span>
-                    <div style="background:#e2e8f0;border-radius:10px;height:8px;margin-top:10px;">
-                        <div style="width:{confidence:.0f}%;height:8px;border-radius:10px;background:#2563eb;"></div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-
-                # Rekomendasi
-                st.markdown(f"""
-                <div class="rekomen-box">
-                    <div style="font-size:13px;font-weight:700;color:#92400E;margin-bottom:4px;">
-                        {rekomen.get('icon','')} Rekomendasi Tindak Lanjut
-                    </div>
-                    <div style="font-size:14px;">{rekomen.get('teks','')}</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-                # Simpan ke database
-                if db_ok:
-                    simpan_riwayat(
-                        nama_cs    = nama_cs,
-                        teks_input = teks_input,
-                        teks_bersih= teks_bersih,
-                        status     = prediksi,
-                        confidence = confidence,
-                        rekomendasi= rekomen.get('teks','')
-                    )
-                    st.success("✅ Hasil tersimpan ke database")
+    if tombol:
+        if not teks_input.strip():
+            st.warning("⚠️ Teks interaksi tidak boleh kosong!")
         else:
-            st.markdown("""
-            <div class="empty-state">
-                <div class="icon">📄</div>
-                <p>Masukkan teks percakapan pelanggan<br>untuk mendapatkan prediksi status</p>
+            with st.spinner("Memproses..."):
+                teks_bersih = preprocess(teks_input, stemmer, stopword_remover)
+                vektor      = tfidf.transform([teks_bersih])
+                prediksi    = model.predict(vektor)[0]
+                confidence  = model.predict_proba(vektor).max() * 100
+                rekomen     = REKOMENDASI.get(prediksi, {})
+
+            badge_key = prediksi.replace(' ', '-')
+
+            st.markdown(f"""
+            <div class="card-box">
+                <div class="hasil-row">
+                    <div class="icon-circle icon-{badge_key}">{rekomen.get('icon','')}</div>
+                    <div>
+                        <span class="status-name">{prediksi}</span>
+                        <span class="confidence-chip">Confidence: {confidence:.1f}%</span>
+                    </div>
+                </div>
+                <div class="progress-bar-bg">
+                    <div style="width:{confidence:.0f}%;height:7px;border-radius:10px;" class="progress-bar-{badge_key}"></div>
+                </div>
+                <div class="rekomen-box">
+                    <div class="judul">{rekomen.get('icon','')} Rekomendasi Tindak Lanjut</div>
+                    <div class="isi">{rekomen.get('teks','')}</div>
+                </div>
             </div>
             """, unsafe_allow_html=True)
 
+            if db_ok:
+                simpan_riwayat(
+                    teks_input  = teks_input,
+                    teks_bersih = teks_bersih,
+                    status      = prediksi,
+                    confidence  = confidence,
+                    rekomendasi = rekomen.get('teks',''),
+                    nama_cs     = "CS"
+                )
+                st.success("✅ Hasil tersimpan ke database")
+    else:
+        st.markdown("""
+        <div class="card-box">
+            <div class="empty-state">
+                <div class="icon">📄</div>
+                <p>Masukkan teks percakapan pelanggan di atas<br>untuk mendapatkan prediksi status dan rekomendasi tindak lanjut</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
 # ============================================================
-# TAB 2 - RIWAYAT PREDIKSI
+# TAB 2 - RIWAYAT PREDIKSI — Tabel custom sesuai gambar
 # ============================================================
 with tab_riwayat:
     st.markdown("#### Riwayat Prediksi")
-    st.caption("Log semua aktivitas klasifikasi status pelanggan")
+    st.caption("Log data klasifikasi status pelanggan yang telah dilakukan")
 
     col_r1, col_r2 = st.columns([3, 1])
     with col_r1:
         filter_status = st.selectbox(
             "Filter Status",
-            ["Semua", "Ask", "Follow Up", "Hold", "Closing"]
+            ["Semua", "Ask", "Follow Up", "Hold", "Closing"],
+            label_visibility="collapsed"
         )
     with col_r2:
-        st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🔄 Refresh", use_container_width=True):
             st.rerun()
 
@@ -304,26 +357,66 @@ with tab_riwayat:
 
     if df_riwayat.empty:
         st.markdown("""
-        <div class="empty-state">
-            <div class="icon">📋</div>
-            <p>Belum ada riwayat prediksi.</p>
+        <div class="card-box">
+            <div class="empty-state">
+                <div class="icon">📋</div>
+                <p>Belum ada riwayat prediksi.</p>
+            </div>
         </div>
         """, unsafe_allow_html=True)
     else:
-        # Filter
         if filter_status != "Semua":
             df_riwayat = df_riwayat[df_riwayat['status'] == filter_status]
 
-        # Format tampilan
-        df_tampil = df_riwayat[['nama_cs', 'teks_input', 'status', 'confidence', 'rekomendasi', 'created_at']].copy()
-        df_tampil.columns = ['CS', 'Teks Input', 'Status', 'Confidence (%)', 'Rekomendasi', 'Waktu']
-        df_tampil['Confidence (%)'] = df_tampil['Confidence (%)'].apply(lambda x: f"{x:.1f}%")
-        df_tampil['Waktu'] = pd.to_datetime(df_tampil['Waktu']).dt.strftime('%d/%m/%Y %H:%M')
+        df_riwayat = df_riwayat.reset_index(drop=True)
+        df_riwayat['no_urut'] = range(len(df_riwayat), 0, -1)
+        df_riwayat['waktu_fmt'] = pd.to_datetime(df_riwayat['created_at']).dt.strftime('%-d/%-m/%Y, %H.%M.%S')
 
-        st.dataframe(df_tampil, use_container_width=True, hide_index=True)
+        def potong(teks, n=80):
+            teks = str(teks)
+            return teks if len(teks) <= n else teks[:n].rstrip() + "..."
+
+        baris_html = ""
+        for _, row in df_riwayat.iterrows():
+            badge_key = str(row['status']).replace(' ', '-')
+            icon = REKOMENDASI.get(row['status'], {}).get('icon', '')
+            baris_html += f"""
+            <tr>
+                <td>{row['no_urut']}</td>
+                <td class="col-teks">{potong(row['teks_input'])}</td>
+                <td><span class="badge-{badge_key}">{icon} {row['status']}</span></td>
+                <td><span class="conf-pill">{row['confidence']:.1f}%</span></td>
+                <td class="col-rekom">{potong(row['rekomendasi'], 90)}</td>
+                <td class="col-waktu">{row['waktu_fmt']}</td>
+            </tr>
+            """
+
+        st.markdown(f"""
+        <div class="card-box">
+            <div class="riwayat-table-wrap">
+                <table class="riwayat-table">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Teks Input</th>
+                            <th>Status</th>
+                            <th>Confidence</th>
+                            <th>Rekomendasi</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {baris_html}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
         # Download
-        csv = df_tampil.to_csv(index=False).encode('utf-8')
+        df_export = df_riwayat[['nama_cs', 'teks_input', 'status', 'confidence', 'rekomendasi', 'created_at']].copy()
+        df_export.columns = ['CS', 'Teks Input', 'Status', 'Confidence (%)', 'Rekomendasi', 'Waktu']
+        csv = df_export.to_csv(index=False).encode('utf-8')
         st.download_button(
             "⬇️ Download CSV",
             data=csv,
@@ -331,7 +424,6 @@ with tab_riwayat:
             mime='text/csv'
         )
 
-        # Hapus semua
         with st.expander("⚠️ Hapus Semua Riwayat"):
             st.warning("Tindakan ini tidak dapat dibatalkan!")
             if st.button("🗑️ Hapus Semua", type="secondary"):
@@ -356,7 +448,6 @@ with tab_statistik:
         </div>
         """, unsafe_allow_html=True)
     else:
-        # Metric cards
         total = sum(statistik.values())
         c1, c2, c3, c4, c5 = st.columns(5)
         c1.metric("Total Prediksi",  total)
@@ -369,19 +460,19 @@ with tab_statistik:
 
         col_g1, col_g2 = st.columns(2)
 
-        # Pie chart distribusi
+        colors = {
+            'Ask':       '#DBEAFE',
+            'Follow Up': '#FFEDD5',
+            'Hold':      '#EDE9FE',
+            'Closing':   '#D1FAE5'
+        }
+
         with col_g1:
             st.markdown("**Distribusi Status Pelanggan**")
             df_pie = pd.DataFrame({
                 'Status': list(statistik.keys()),
                 'Jumlah': list(statistik.values())
             })
-            colors = {
-                'Ask':       '#DBEAFE',
-                'Follow Up': '#D1FAE5',
-                'Hold':      '#FEF3C7',
-                'Closing':   '#FCE7F3'
-            }
             fig_pie = px.pie(
                 df_pie, values='Jumlah', names='Status',
                 color='Status',
@@ -391,7 +482,6 @@ with tab_statistik:
             fig_pie.update_layout(margin=dict(t=10, b=10))
             st.plotly_chart(fig_pie, use_container_width=True)
 
-        # Bar chart per status
         with col_g2:
             st.markdown("**Jumlah per Status**")
             fig_bar = px.bar(
@@ -408,7 +498,6 @@ with tab_statistik:
             )
             st.plotly_chart(fig_bar, use_container_width=True)
 
-        # Tren waktu jika ada data
         if not df_riwayat_all.empty and 'created_at' in df_riwayat_all.columns:
             st.markdown("**Tren Prediksi per Hari**")
             df_tren = df_riwayat_all.copy()
@@ -419,8 +508,8 @@ with tab_statistik:
                 df_tren_group, x='tanggal', y='jumlah',
                 color='status',
                 color_discrete_map={
-                    'Ask': '#3B82F6', 'Follow Up': '#10B981',
-                    'Hold': '#F59E0B', 'Closing': '#EC4899'
+                    'Ask': '#2563eb', 'Follow Up': '#ea580c',
+                    'Hold': '#7c3aed', 'Closing': '#059669'
                 },
                 markers=True
             )
