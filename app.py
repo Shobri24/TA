@@ -2,6 +2,7 @@ import streamlit as st
 import joblib
 import pandas as pd
 import re
+import html
 import plotly.express as px
 from datetime import datetime
 from supabase import create_client, Client
@@ -373,18 +374,19 @@ with tab_riwayat:
         df_riwayat['waktu_fmt'] = pd.to_datetime(df_riwayat['created_at']).dt.strftime('%-d/%-m/%Y, %H.%M.%S')
 
         def potong(teks, n=80):
-            teks = str(teks)
+            teks = html.escape(str(teks))
             return teks if len(teks) <= n else teks[:n].rstrip() + "..."
 
         baris_html = ""
         for _, row in df_riwayat.iterrows():
             badge_key = str(row['status']).replace(' ', '-')
+            status_aman = html.escape(str(row['status']))
             icon = REKOMENDASI.get(row['status'], {}).get('icon', '')
             baris_html += f"""
             <tr>
                 <td>{row['no_urut']}</td>
                 <td class="col-teks">{potong(row['teks_input'])}</td>
-                <td><span class="badge-{badge_key}">{icon} {row['status']}</span></td>
+                <td><span class="badge-{badge_key}">{icon} {status_aman}</span></td>
                 <td><span class="conf-pill">{row['confidence']:.1f}%</span></td>
                 <td class="col-rekom">{potong(row['rekomendasi'], 90)}</td>
                 <td class="col-waktu">{row['waktu_fmt']}</td>
