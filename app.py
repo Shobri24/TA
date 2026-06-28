@@ -297,24 +297,17 @@ with tab_home:
 
             badge_key = prediksi.replace(' ', '-')
 
-            st.markdown(f"""
-            <div class="card-box">
-                <div class="hasil-row">
-                    <div class="icon-circle icon-{badge_key}">{rekomen.get('icon','')}</div>
-                    <div>
-                        <span class="status-name">{prediksi}</span>
-                        <span class="confidence-chip">Confidence: {confidence:.1f}%</span>
-                    </div>
-                </div>
-                <div class="progress-bar-bg">
-                    <div style="width:{confidence:.0f}%;height:7px;border-radius:10px;" class="progress-bar-{badge_key}"></div>
-                </div>
-                <div class="rekomen-box">
-                    <div class="judul">{rekomen.get('icon','')} Rekomendasi Tindak Lanjut</div>
-                    <div class="isi">{rekomen.get('teks','')}</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+            hasil_html = (
+                f'<div class="card-box"><div class="hasil-row">'
+                f'<div class="icon-circle icon-{badge_key}">{rekomen.get("icon","")}</div>'
+                f'<div><span class="status-name">{prediksi}</span>'
+                f'<span class="confidence-chip">Confidence: {confidence:.1f}%</span></div></div>'
+                f'<div class="progress-bar-bg"><div style="width:{confidence:.0f}%;height:7px;border-radius:10px;" '
+                f'class="progress-bar-{badge_key}"></div></div>'
+                f'<div class="rekomen-box"><div class="judul">{rekomen.get("icon","")} Rekomendasi Tindak Lanjut</div>'
+                f'<div class="isi">{rekomen.get("teks","")}</div></div></div>'
+            )
+            st.markdown(hasil_html, unsafe_allow_html=True)
 
             if db_ok:
                 simpan_riwayat(
@@ -382,38 +375,26 @@ with tab_riwayat:
             badge_key = str(row['status']).replace(' ', '-')
             status_aman = html.escape(str(row['status']))
             icon = REKOMENDASI.get(row['status'], {}).get('icon', '')
-            baris_html += f"""
-            <tr>
-                <td>{row['no_urut']}</td>
-                <td class="col-teks">{potong(row['teks_input'])}</td>
-                <td><span class="badge-{badge_key}">{icon} {status_aman}</span></td>
-                <td><span class="conf-pill">{row['confidence']:.1f}%</span></td>
-                <td class="col-rekom">{potong(row['rekomendasi'], 90)}</td>
-                <td class="col-waktu">{row['waktu_fmt']}</td>
-            </tr>
-            """
+            baris_html += (
+                "<tr>"
+                f"<td>{row['no_urut']}</td>"
+                f"<td class=\"col-teks\">{potong(row['teks_input'])}</td>"
+                f"<td><span class=\"badge-{badge_key}\">{icon} {status_aman}</span></td>"
+                f"<td><span class=\"conf-pill\">{row['confidence']:.1f}%</span></td>"
+                f"<td class=\"col-rekom\">{potong(row['rekomendasi'], 90)}</td>"
+                f"<td class=\"col-waktu\">{row['waktu_fmt']}</td>"
+                "</tr>"
+            )
 
-        st.markdown(f"""
-        <div class="card-box">
-            <div class="riwayat-table-wrap">
-                <table class="riwayat-table">
-                    <thead>
-                        <tr>
-                            <th>No</th>
-                            <th>Teks Input</th>
-                            <th>Status</th>
-                            <th>Confidence</th>
-                            <th>Rekomendasi</th>
-                            <th>Timestamp</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {baris_html}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        tabel_html = (
+            '<div class="card-box"><div class="riwayat-table-wrap">'
+            '<table class="riwayat-table"><thead><tr>'
+            '<th>No</th><th>Teks Input</th><th>Status</th>'
+            '<th>Confidence</th><th>Rekomendasi</th><th>Timestamp</th>'
+            f'</tr></thead><tbody>{baris_html}</tbody></table>'
+            '</div></div>'
+        )
+        st.markdown(tabel_html, unsafe_allow_html=True)
 
         # Download
         df_export = df_riwayat[['nama_cs', 'teks_input', 'status', 'confidence', 'rekomendasi', 'created_at']].copy()
