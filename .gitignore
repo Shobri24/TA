@@ -1,0 +1,5 @@
+# Jangan upload ke GitHub
+.streamlit/secrets.toml
+__pycache__/
+*.pyc
+.env
